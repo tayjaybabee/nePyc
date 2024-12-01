@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "nepyc"
+version = "1.0.0-dev1"
+description = ""
+authors = ["Taylor B. <tayjaybabee@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+inspy-logger = ">=3.2.1"
+inspyre-toolbox = ">=1.6.0.dev13"
+pillow = "^11.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
