@@ -1,3 +1,4 @@
+from nepyc.common.utils import is_port_free
 from nepyc.server.config import CONFIG
 from nepyc.log_engine import ROOT_LOGGER, Loggable
 from nepyc.server.gui import SlideshowGUI
@@ -6,6 +7,7 @@ import threading
 from PIL import Image
 from io import BytesIO
 import struct
+from nepyc.server.signals import exit_flag
 
 
 MOD_LOGGER = ROOT_LOGGER.get_child('server.server')
@@ -19,6 +21,7 @@ class ImageServer(Loggable):
         super().__init__(MOD_LOGGER)
 
         self.__host    = None
+        self.__lock = threading.Lock()
         self.__port    = None
         self.__running = False
         self.__server  = None
@@ -27,6 +30,10 @@ class ImageServer(Loggable):
         self.host = host
         self.port = port
         self.__gui = SlideshowGUI(self)
+
+    @property
+    def exit_flag(self):
+        return exit_flag
 
     @property
     def gui(self):
@@ -55,7 +62,8 @@ class ImageServer(Loggable):
 
     @property
     def images(self):
-        return self.__images
+        with self.__lock:
+            return self.__images
 
     @images.deleter
     def images(self):
@@ -77,6 +85,9 @@ class ImageServer(Loggable):
             log.error('Port must be an integer')
             raise TypeError('Port must be an integer')
 
+        if not is_port_free(new, self.host):
+            log.warning(f'Port {new} is not free, server may not be able to bind to it.')
+
         self.__port = new
         log.debug(f'Port set to {self.port}')
 
@@ -95,6 +106,23 @@ class ImageServer(Loggable):
     def server(self):
         return self.__server
 
+    @property
+    def size_of_images(self):
+        """
+        Return the total size (in bytes) of all received images.
+
+        Returns:
+            int:
+                The total size of all images in bytes.
+        """
+        total_size = 0
+        for image in self.images:
+            with BytesIO() as img_buffer:
+                image.save(img_buffer, format=image.format)
+                total_size += len(img_buffer.getvalue())
+
+        return total_size
+
     def bind(self):
         log = self.create_logger()
         log.debug(f'Binding server to {self.host}:{self.port}')
@@ -103,8 +131,21 @@ class ImageServer(Loggable):
             log.error('Server is already running, cannot bind again')
             raise ValueError('Server is already running')
 
+        if not self.host:
+            log.error('Host must be set before binding')
+            raise ValueError('Host must be set before binding')
+
+        if not is_port_free(self.port, self.host):
+            log.error(f'Port {self.port} is not free, cannot bind to it')
+            raise ValueError(f'Port {self.port} is not free, cannot bind to it')
+
         self.__server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.host, self.port))
+
+        try:
+            self.server.bind((self.host, self.port))
+        except PermissionError as e:
+            log.error(f'Error binding to {self.host}:{self.port}: {e}')
+            self.stop()
 
         log.debug(f'Server bound to {self.host}:{self.port}')
 
@@ -119,13 +160,26 @@ class ImageServer(Loggable):
 
         try:
             while self.running:
-                conn, addr = self.server.accept()
+                self.server.settimeout(1.0)
+
+                try:
+                    conn, addr = self.server.accept()
+                    log.debug(f'Accepted connection from {addr}')
+                    threading.Thread(target=self.handle_client, args=(conn, addr)).start()
+
+                except socket.timeout:
+                    continue
+
+                except OSError:
+                    log.error('Error accepting connection')
+                    break  # Break out of the loop, socket's been closed.
+
                 log.debug(f'Connection from {addr}')
 
-                threading.Thread(target=self.handle_client, args=(conn, addr)).start()
         except KeyboardInterrupt:
             log.debug('Keyboard interrupt received, stopping server')
             self.running = False
+
         finally:
             self.server.close()
 
@@ -167,6 +221,10 @@ class ImageServer(Loggable):
                 client.sendall(b'OK')
                 log.debug('Response sent')
 
+    def run_server(self):
+        self.bind()
+        self.listen()
+
     def start(self):
         log = self.create_logger()
         log.debug('Starting server')
@@ -175,10 +233,39 @@ class ImageServer(Loggable):
             log.error('Server is already running')
             raise ValueError('Server is already running')
 
-        gui_thread = threading.Thread(target=self.gui.start, daemon=True)
-        gui_thread.start()
+        self.__running = True
 
-        self.bind()
-        self.listen()
+        server_thread = threading.Thread(target=self.run_server, daemon=True)
+        log.debug(f'Starting server thread {server_thread}')
+        server_thread.start()
 
-        log.debug('Server started')
+        try:
+            # Start the GUI in the main
+            self.gui.start()
+        except KeyboardInterrupt:
+            self.stop()
+            print('Server and GUI have been stopped.')
+            sys.exit(0)
+
+
+        server_thread.join()
+
+
+    def stop(self, from_gui=False):
+        log = self.create_logger()
+        log.debug('Stopping server...')
+
+        self.running = False
+
+        if self.server:
+            try:
+                self.server.close()
+            except Exception as e:
+                log.error(f'Error stopping server: {e}')
+
+        log.debug('Server stopped.')
+        if not from_gui:
+            self.gui.queue.put('EXIT')
+            self.gui.on_exit()
+
+        log.debug('GUI stopped...')

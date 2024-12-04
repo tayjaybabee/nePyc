@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nepyc"
-version = "1.0.0-dev2"
+version = "1.0.0-dev3"
 description = "A Python application for image data streaming, processing, and dynamic slideshow display."
 authors = ["Taylor B. <tayjaybabee@gmail.com>"]
 readme = "README.md"
