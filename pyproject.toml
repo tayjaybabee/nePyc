@@ -1,15 +1,24 @@
 [tool.poetry]
 name = "nepyc"
-version = "1.0.0-dev1"
-description = ""
+version = "1.0.0-dev5"
+description = "A Python application for image data streaming, processing, and dynamic slideshow display."
 authors = ["Taylor B. <tayjaybabee@gmail.com>"]
 readme = "README.md"
 
+[tool.poetry.scripts]
+nepyc-server = "nepyc.server.main:main"
+
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.14"
 inspy-logger = ">=3.2.1"
 inspyre-toolbox = ">=1.6.0.dev13"
 pillow = "^11.0.0"
+protobuf = "^5.29.1"
+imagehash = "^4.3.1"
+platformdirs = "^4.3.6"
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.11.1"
 
 
 [build-system]

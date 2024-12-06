@@ -1,1 +1,1 @@
-from nepyc.server.config import CONFIG
+from nepyc.server.cli.config import ENV_CONFIG as CONFIG

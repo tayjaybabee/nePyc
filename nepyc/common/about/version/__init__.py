@@ -1,25 +1,51 @@
-"""
-Author: Taylor B. tayjaybabee@gmail.com
-Date: 2024-12-01 08:11:10
-LastEditors: Taylor B. tayjaybabee@gmail.com
-LastEditTime: 2024-12-01 08:13:43
-FilePath: nepyc/common/about/version/__init__.py
-Description: 这是默认设置,可以在设置》工具》File Description中进行配置
-"""
-"""
+from pathlib import Path
+
+from inspyre_toolbox.ver_man import PyPiVersionInfo, VersionParser
+from inspyre_toolbox.ver_man.helpers import read_version_file
+
+VERSION_FILE_NAME = 'VERSION'
 
 
-Author: 
-    Inspyre Softworks
+def get_version_file_path(version_file_name: str = VERSION_FILE_NAME) -> Path:
+    """
+    Gets the version-file path.
 
-Project:
-    nePyc
+    Parameters:
+        version_file_name (str, optional):
+            The name of the version file. Defaults to :str:'VERSION
 
-File: 
-    nepyc/common/about/version/__init__.py
- 
+    Returns:
+        Path:
+            The version-file path.
 
-Description:
-    
+    Since:
+        v1.6.0
 
-"""
+    Example Usage:
+        >>> from nepyc.common.about.version import get_version_file_path
+        >>> file_path = get_version_file_path()
+        >>> print(file_path)
+        Path('path/to/version/file')
+    """
+    return Path(__file__).parent / version_file_name
+
+
+VERSION_FILE_PATH = get_version_file_path()
+
+VERSION = VersionParser(read_version_file(VERSION_FILE_PATH))
+
+VERSION_NUMBER = VERSION.parse_version()
+
+# Clean up the namespace
+del get_version_file_path
+del VersionParser
+del VERSION_FILE_PATH
+del read_version_file
+
+PYPI_VERSION_INFO = PyPiVersionInfo('nepyc')
+
+__all__ = [
+    'VERSION',
+    'VERSION_NUMBER',
+    'PYPI_VERSION_INFO',
+]

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+
+message Ack {
+  int32 code = 1;
+  string status = 2;
+  string description = 3;
+  map<int32, Ack> children = 4; // nested acks
+}
