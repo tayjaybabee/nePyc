@@ -10,6 +10,7 @@ Example Usage:
     >>> exit_flag
     True
 """
+import os
 import sys
 import signal
 from threading import Event

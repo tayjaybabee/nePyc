@@ -20,7 +20,7 @@ def main():
     log = APP_LOGGER.get_child('main')
     log.debug('Starting the image server...')
 
-    server = ImageServer(host=ARGS.parsed.host, port=ARGS.parsed.port)
+    server = ImageServer(host=ARGS.parsed.host, port=ARGS.parsed.port, save_incoming_images=ARGS.parsed.save_images)
 
     try:
         server_thread = threading.Thread(target=server.run_server, daemon=True)

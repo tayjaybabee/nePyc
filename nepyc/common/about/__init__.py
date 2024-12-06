@@ -1,25 +1,15 @@
-"""
-Author: Taylor B. tayjaybabee@gmail.com
-Date: 2024-12-01 08:08:38
-LastEditors: Taylor B. tayjaybabee@gmail.com
-LastEditTime: 2024-12-01 08:13:43
-FilePath: nepyc/common/about/__init__.py
-Description: 这是默认设置,可以在设置》工具》File Description中进行配置
-"""
-"""
+from nepyc.common.about.author import SOFTWARE_ORG
+from nepyc.common.about.version import VERSION_NUMBER as VERSION
 
 
-Author: 
-    Inspyre Softworks
+AUTHOR = SOFTWARE_ORG['name']
 
-Project:
-    nePyc
 
-File: 
-    nepyc/common/about/__init__.py
- 
+PROG_NAME = 'nePyc'
 
-Description:
-    
 
-"""
+__all__ = [
+    'AUTHOR',
+    'VERSION'
+
+]

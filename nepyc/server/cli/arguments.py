@@ -14,12 +14,16 @@ Example Usage:
 """
 from argparse import ArgumentParser
 from os import environ
+from nepyc.server.cli.config import ENV_CONFIG as CONFIG
 
 
 # Default values for the bind host and port
 DEFAULT_BIND_HOST = 'localhost'
 DEFAULT_BIND_PORT = 8580
 DEFAULT_LOG_LEVEL = 'INFO'
+
+DEFAULT_SAVE_IMAGES = False
+DEFAULT_IMAGE_DIR   = CONFIG.SAVE_IMAGE_DIR
 
 
 class Arguments:
@@ -47,6 +51,9 @@ class Arguments:
         self.parser.add_argument('-H', '--host', default=DEFAULT_BIND_HOST, help='Address to bind to.')
         self.parser.add_argument('-P', '--port', type=int, default=DEFAULT_BIND_PORT, help='The port to bind to.')
         self.parser.add_argument('-L', '--log-level', default=DEFAULT_LOG_LEVEL, help='The level at which to log.')
+        self.parser.add_argument('-S', '--save-images', action='store_true', default=DEFAULT_SAVE_IMAGES,
+                                 help='Save incoming images to disk.')
+        self.parser.add_argument('-D', '--save-directory', default=DEFAULT_IMAGE_DIR, help='The directory to save images.')
         self.__parsed = None
 
     @property
@@ -88,14 +95,13 @@ class Arguments:
         # Create an instance of the class
         instance = cls()
 
-        # Override default values with those from environment variables if they exist
-        env_host      = environ.get('NEPYC_BIND_HOST')
-        env_port      = environ.get('NEPYC_BIND_PORT')
-        env_log_level = environ.get('NEPYC_LOG_LEVEL')
+        env_host = CONFIG.BIND_HOST
+        env_port = CONFIG.BIND_PORT
 
         # Set the default values from the environment variables if they exist
         if env_host is not None:
             instance.parser.set_defaults(host=env_host)
         if env_port is not None:
             instance.parser.set_defaults(port=int(env_port))
+
         return instance

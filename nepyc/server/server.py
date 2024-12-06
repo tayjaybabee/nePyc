@@ -1,13 +1,19 @@
 from nepyc.common.utils import is_port_free
-from nepyc.server.config import CONFIG
+from nepyc.server.cli.config import ENV_CONFIG as CONFIG
 from nepyc.log_engine import ROOT_LOGGER, Loggable
 from nepyc.server.gui import SlideshowGUI
+from nepyc.server.utils.hashes import check_hash, load_hash_data, append_hash_to_file
+from nepyc.server.utils.images import assign_number, load_all_images
+from nepyc.server.protocol import ack_lookup, send_ack, deserialize_ack, status_lookup
 import socket
 import threading
 from PIL import Image
 from io import BytesIO
 import struct
 from nepyc.server.signals import exit_flag
+from pathlib import Path
+import sys
+import hashlib
 
 
 MOD_LOGGER = ROOT_LOGGER.get_child('server.server')
@@ -16,20 +22,67 @@ MOD_LOGGER = ROOT_LOGGER.get_child('server.server')
 class ImageServer(Loggable):
     DEFAULT_BIND_HOST = CONFIG.BIND_HOST
     DEFAULT_BIND_PORT = CONFIG.BIND_PORT
+    DEFAULT_DO_SAVE   = CONFIG.SAVE_IMAGES
+    DEFAULT_SAVE_DIR  = CONFIG.SAVE_IMAGE_DIR
 
-    def __init__(self, host=DEFAULT_BIND_HOST, port=DEFAULT_BIND_PORT):
+    def __init__(
+            self,
+            host=DEFAULT_BIND_HOST,
+            port=DEFAULT_BIND_PORT,
+            save_incoming_images=False,
+            save_directory=CONFIG.SAVE_IMAGE_DIR,
+            display_saved_images=False
+    ):
         super().__init__(MOD_LOGGER)
+        log = self.class_logger
+        self.__display_saved_images = display_saved_images
 
-        self.__host    = None
-        self.__lock = threading.Lock()
-        self.__port    = None
-        self.__running = False
-        self.__server  = None
-        self.__images  = []
+        self.__host        = None
+        self.__lock        = threading.Lock()
+        self.__port        = None
+        self.__running     = False
+        self.__save_images = False
+        self.__server      = None
+        self.__images      = []
+        self.__image_hashes = {}
+
+        self.save_images = save_incoming_images
+        log.debug(f'Save images set to {self.save_images}')
+
+        self.save_directory = save_directory
+        log.debug(f'Save directory set to {self.save_directory}')
+
+        self.__saved_image_hashes = {
+
+        }
 
         self.host = host
+        log.debug(f'Host set to {self.host}')
+
         self.port = port
+        log.debug(f'Port set to {self.port}')
+
         self.__gui = SlideshowGUI(self)
+        log.debug(f'GUI created: {self.gui}')
+
+        if self.display_saved_images:
+            self.__images.extend(load_all_images(self.save_directory))
+
+
+        if self.save_images:
+            target_dir = Path(self.save_directory)
+            if not target_dir.exists():
+                log.debug(f'Creating save directory {self.save_directory}')
+                target_dir.mkdir(parents=True, exist_ok=True)
+
+            else:
+                if not target_dir.joinpath('.manifest').exists():
+                    log.debug(f'Creating manifest file {target_dir.joinpath(".manifest")}')
+                    target_dir.joinpath('.manifest').touch()
+
+    @property
+    def display_saved_images(self):
+        return self.__display_saved_images
 
     @property
     def exit_flag(self):
@@ -70,6 +123,14 @@ class ImageServer(Loggable):
         self.__images = []
 
     @property
+    def image_hashes(self):
+        return self.__image_hashes
+
+    @image_hashes.deleter
+    def image_hashes(self):
+        self.__image_hashes = {}
+
+    @property
     def port(self):
         return self.__port
 
@@ -101,6 +162,17 @@ class ImageServer(Loggable):
             raise TypeError('Running must be a boolean')
 
         self.__running = new
+
+    @property
+    def save_images(self):
+        return self.__save_images
+
+    @save_images.setter
+    def save_images(self, new):
+        if not isinstance(new, bool):
+            raise TypeError('The save images flag must be a boolean!')
+
+        self.__save_images = new
 
     @property
     def server(self):
@@ -171,6 +243,8 @@ class ImageServer(Loggable):
                     continue
 
                 except OSError:
+                    if not self.running:
+                        break
                     log.error('Error accepting connection')
                     break  # Break out of the loop, socket's been closed.
 
@@ -209,16 +283,45 @@ class ImageServer(Loggable):
 
                 try:
                     image = Image.open(BytesIO(data))
-                    image.verify()
-                    image = Image.open(BytesIO(data))
+                    image.load()
+
+                    if check_hash(image, self.image_hashes):
+                        log.debug('Duplicate image received, ignoring...')
+                        send_ack(status_lookup('DUPLICATE'), client)
+
+                        continue
+
+                    if self.save_images:
+                        print('Loading hashes...')
+                        known_hashes, missing_numbers, max_number = load_hash_data(self.save_directory)
+                        print(known_hashes, missing_numbers, max_number)
+                        img_hash = hashlib.md5(image.tobytes()).hexdigest()
+
+                        if not img_hash in known_hashes:
+                            log.debug('Image not in hash database, saving...')
+                            file_number, max_number = assign_number(missing_numbers, max_number)
+                            file_name = f'{file_number}.png'
+                            image.save(f'{self.save_directory}/{file_name}')
+                            log.debug(f'Image saved to {self.save_directory}/{image.filename}')
+                            append_hash_to_file(self.save_directory, img_hash, file_number)
+                        else:
+                            log.debug('Image already in hash database, ignoring...')
+                            send_ack(status_lookup('DUPLICATE'), client)
+                            continue
+
+                    ack = status_lookup('OK')
+                    send_ack(ack, client)
+
+
                 except (OSError, ValueError) as e:
                     log.error(f'Invalid image data: {e}')
+                    ack = status_lookup('INVALID')
+                    send_ack(ack, client)
                     client.sendall(b'Image data invalid')
                     continue
                     # This forces the complete loading of the image
                 self.images.append(image)
                 log.debug('Image added to list')
-                client.sendall(b'OK')
                 log.debug('Response sent')
 
     def run_server(self):
@@ -234,6 +337,10 @@ class ImageServer(Loggable):
             raise ValueError('Server is already running')
 
         self.__running = True
+
+        if self.save_images and not Path(self.save_directory).exists():
+            log.debug(f'Creating save directory {self.save_directory}')
+            Path(self.save_directory).mkdir(parents=True, exist_ok=True)
 
         server_thread = threading.Thread(target=self.run_server, daemon=True)
         log.debug(f'Starting server thread {server_thread}')
