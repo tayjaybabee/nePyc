@@ -1,7 +1,15 @@
-from nepyc.server.protocol.ack import ACK_MAP, ack_protocol
+from nepyc.proto.ack import DISPATCHER, DuplicateAck, InvalidAck, OKAck
 
 
-def ack_lookup(code: int):
+ACK_MAP = {
+    OKAck.status: OKAck,
+    DuplicateAck.status: DuplicateAck,
+    InvalidAck.status: InvalidAck
+}
+
+
+
+def ack_lookup(status):
     """
     Lookup the ACK message for a given code.
 
@@ -14,7 +22,8 @@ def ack_lookup(code: int):
         Ack:
             The ACK message for the given code.
     """
-    return ACK_MAP.get(code, 'Unknown ACK code')
+    status = status.upper()
+    return DISPATCHER.dispatch(ACK_MAP[status])
 
 
 def serialize_ack(ack):
@@ -29,7 +38,7 @@ def serialize_ack(ack):
         bytes:
             The serialized ACK message as a byte string.
     """
-    return ack.SerializeToString()
+    return ack.to_bytes()
 
 
 def send_ack(ack, conn):

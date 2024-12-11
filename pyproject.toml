@@ -1,25 +1,37 @@
 [tool.poetry]
 name = "nepyc"
-version = "1.0.0-dev5"
+version = "1.0.0-dev6"
 description = "A Python application for image data streaming, processing, and dynamic slideshow display."
 authors = ["Taylor B. <tayjaybabee@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
 nepyc-server = "nepyc.server.main:main"
+nepyc-client = "nepyc.client.main:main"
+nepyc = "nepyc.main:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
 inspy-logger = ">=3.2.1"
-inspyre-toolbox = ">=1.6.0.dev13"
 pillow = "^11.0.0"
 protobuf = "^5.29.1"
 imagehash = "^4.3.1"
 platformdirs = "^4.3.6"
+pysimplegui = "^5.0.7"
+inspyre-toolbox = {version = "1.6.0.dev17", source = "test-pypi"}
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.1"
+ipython = "^8.30.0"
+prompt-toolkit = "^3.0.48"
+ptipython = "^1.0.1"
 
+
+
+[[tool.poetry.source]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple/"
+priority = "primary"
 
 [build-system]
 requires = ["poetry-core"]

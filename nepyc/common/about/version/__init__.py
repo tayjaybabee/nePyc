@@ -2,6 +2,9 @@ from pathlib import Path
 
 from inspyre_toolbox.ver_man import PyPiVersionInfo, VersionParser
 from inspyre_toolbox.ver_man.helpers import read_version_file
+from inspyre_toolbox.ver_man.classes.pypi import load_pypi_version_info
+from nepyc.common.utils.context_managers import suppress_stdout, suppress_exception
+
 
 VERSION_FILE_NAME = 'VERSION'
 
@@ -42,7 +45,9 @@ del VersionParser
 del VERSION_FILE_PATH
 del read_version_file
 
-PYPI_VERSION_INFO = PyPiVersionInfo('nepyc')
+with suppress_exception():
+    with suppress_stdout():
+        PYPI_VERSION_INFO = load_pypi_version_info('nepyc')
 
 __all__ = [
     'VERSION',

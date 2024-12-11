@@ -12,8 +12,6 @@ ROOT_LOGGER.set_level(console_level=ARGS.parsed.log_level)
 APP_LOGGER = ROOT_LOGGER.get_child('Server')
 
 
-
-
 def main():
     from nepyc.server.server import ImageServer
     setup_signal_handler()
