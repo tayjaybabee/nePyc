@@ -12,11 +12,7 @@ def window_layout():
     host   = config.host
     port   = config.port
 
-    if config.config_file_loaded:
-        cb_checked = True
-    else:
-        cb_checked = False
-
+    cb_checked = bool(config.config_file_loaded)
     return [
         [psg.Text('Host:'), psg.InputText(host, key='TXI_HOST')],
         [psg.Text('Port:'), psg.InputText(port, key='TXI_PORT')],

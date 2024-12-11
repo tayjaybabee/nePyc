@@ -16,7 +16,4 @@ class Arguments(ArgumentParser):
         return self.__parsed
 
     def parse_args(self):
-        if not self.__parsed:
-            return super().parse_args()
-        else:
-            return self.__parsed
+        return super().parse_args() if not self.__parsed else self.__parsed

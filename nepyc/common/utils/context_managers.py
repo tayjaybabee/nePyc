@@ -13,7 +13,6 @@ def suppress_exception():
     except Exception as e:
         # Suppress the exception by preventing its output
         sys.stderr.write(f"Exception suppressed: {str(e)}\n")
-        pass  # You could also log the error or handle it differently if needed
 
 
 @contextmanager
