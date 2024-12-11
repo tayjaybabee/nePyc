@@ -48,12 +48,17 @@ class Arguments:
         """
         # Create the ArgumentParser object without any arguments
         self.parser = ArgumentParser()
+        subcommands = self.parser.add_subparsers(dest='command')
+        delete_command = subcommands.add_parser('delete-images', help='Delete all saved images.')
+        delete_command.add_argument('-b', '--backup', action='store_true', help='Backup the images before deleting them.')
+
         self.parser.add_argument('-H', '--host', default=DEFAULT_BIND_HOST, help='Address to bind to.')
         self.parser.add_argument('-P', '--port', type=int, default=DEFAULT_BIND_PORT, help='The port to bind to.')
         self.parser.add_argument('-L', '--log-level', default=DEFAULT_LOG_LEVEL, help='The level at which to log.')
         self.parser.add_argument('-S', '--save-images', action='store_true', default=DEFAULT_SAVE_IMAGES,
                                  help='Save incoming images to disk.')
         self.parser.add_argument('-D', '--save-directory', default=DEFAULT_IMAGE_DIR, help='The directory to save images.')
+        self.parser.add_argument('--display-saved-images', action='store_true', default=False, help='Display images received and saved from previous sessions.')
         self.__parsed = None
 
     @property
