@@ -7,6 +7,9 @@ from nepyc.log_engine import ROOT_LOGGER as PARENT_LOGGER
 MOD_LOGGER = PARENT_LOGGER.get_child('server.utils.hashes')
 
 
+
+
+
 def load_hashes(pic_dir):
     hashes_file = os.path.join(pic_dir, 'hashes.txt')
 

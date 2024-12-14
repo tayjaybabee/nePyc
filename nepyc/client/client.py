@@ -147,6 +147,8 @@ class ImageClient(Loggable):
             log.error(f'Failed to send image: {e}')
             raise
 
+        log.info(f'Sent image at "{image_path}" and received response {response.status}')
+
     def receive_response(self):
         from nepyc.proto.ack import Ack, ACK_MAP
         log = self.create_logger()
@@ -162,13 +164,12 @@ class ImageClient(Loggable):
 
         log.debug('Response received')
         response = RECEIVER.receive(response)
-        print(type(response))
 
         if not isinstance(response, Ack) and not issubclass(response.__class__, Ack):
             log.error('Received response is not an Ack instance')
             print(response)
 
-        if response.status != b'OK':
+        if response.status not in [b'OK', 'OK']:
             log.warning(f'Received response status is not OK: {response}')
 
         log.debug(f'Response: {response}')
