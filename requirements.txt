@@ -29,7 +29,7 @@ inspyre-toolbox==1.6.0.dev17 ; python_version >= "3.10" and python_version < "3.
 inspyred-print==1.2.1 ; python_version >= "3.10" and python_version < "3.14"
 ipython==8.30.0 ; python_version >= "3.10" and python_version < "3.14"
 jedi==0.19.2 ; python_version >= "3.10" and python_version < "3.14"
-jinja2==3.1.4 ; python_version >= "3.10" and python_version < "3.14"
+jinja2==3.1.6 ; python_version >= "3.10" and python_version < "3.14"
 lastversion==2.4.14 ; python_version >= "3.10" and python_version < "3.14"
 legacy-cgi==2.6.1 ; python_version >= "3.13" and python_version < "3.14"
 lockfile==0.12.2 ; python_version >= "3.10" and python_version < "3.14"
